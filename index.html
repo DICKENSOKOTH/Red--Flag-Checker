@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Red Flag Checker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#e63946',
+            secondary: '#1d3557',
+            accent: '#ff9e00',
+            light: '#f1faee',
+            dark: '#1d3557'
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --main-bg: #fff;
+      --text-color: #000;
+      --accent: #e63946;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      --border-radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.4s ease-in-out;
+      min-height: 100vh;
+    }
+
+    @supports (font-variation-settings: normal) {
+      body {
+        font-family: 'Inter var', -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+    }
+
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+
+    .visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    .fade-in-up {
+      animation: fadeInUp 0.6s ease forwards;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, .3);
+      border-radius: 50%;
+      border-top-color: var(--accent);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .question-box {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 1rem;
+      border-radius: 16px;
+      margin: 0.5rem 0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .answer-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+    }
+
+    .answer-buttons button {
+      flex: 1;
+      margin: 0 0.25rem;
+      padding: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    .result-section {
+      margin: 1rem 0;
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+      padding: 1rem;
+    }
+
+    .share-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .share-btn {
+      padding: 0.8rem 1.5rem;
+      border-radius: 50px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .share-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .whatsapp {
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      color: white;
+    }
+
+    .instagram {
+      background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      color: white;
+    }
+
+    .icon {
+      font-size: 1.2em;
+    }
+
+    .donate-box {
+      margin: 1rem 0;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 1rem;
+      border-radius: 16px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .donate-box h3 {
+      margin-bottom: 0.5rem;
+    }
+
+    .donate-prompt {
+      margin-top: 0.75rem;
+      background: rgba(255, 247, 230, 0.3);
+      padding: 0.6rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      color: #222;
+      border: 1px dashed rgba(224, 176, 0, 0.5);
+    }
+
+    .copy-btn {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      background: linear-gradient(135deg, #ffe08a, #ffb300);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      font-size: 0.85rem;
+    }
+
+    .copy-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .quotes-box {
+      margin: 1rem 0;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 1.2rem;
+      border-radius: 16px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .quote-text {
+      font-style: italic;
+      margin: 0.8rem 0;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .quote-btn {
+      background: linear-gradient(135deg, #764ba2, #667eea);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      font-size: 0.85rem;
+    }
+
+    .quote-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .progress-bar {
+      height: 6px;
+      background-color: rgba(224, 224, 224, 0.3);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 0.8rem 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e63946, #ff5e62);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .badge-red {
+      background: linear-gradient(135deg, #ffebee, #ffcdd2);
+      color: #e63946;
+    }
+
+    .badge-green {
+      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+      color: #4caf50;
+    }
+
+    .badge-yellow {
+      background: linear-gradient(135deg, #fff8e1, #ffecb3);
+      color: #ffc107;
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.05);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .floating {
+      animation: floating 3s ease-in-out infinite;
+    }
+
+    @keyframes floating {
+      0% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+
+      100% {
+        transform: translateY(0px);
+      }
+    }
+
+    .feature-section {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .feature-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .neumorphic {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow:
+        8px 8px 16px rgba(0, 0, 0, 0.1),
+        -8px -8px 16px rgba(255, 255, 255, 0.1);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #e63946, #ff9e00, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .modern-input {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+      padding: 0.6rem 0.8rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+
+    .modern-input:focus {
+      outline: none;
+      border-color: #e63946;
+      box-shadow: 0 0 0 2px rgba(230, 57, 70, 0.2);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .modern-btn {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateY(0);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .modern-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .modern-btn:active {
+      transform: translateY(-1px);
+    }
+
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .pulse-glow {
+      animation: pulse-glow 2s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0% {
+        box-shadow: 0 0 8px rgba(230, 57, 70, 0.3);
+      }
+
+      50% {
+        box-shadow: 0 0 20px rgba(230, 57, 70, 0.5);
+      }
+
+      100% {
+        box-shadow: 0 0 8px rgba(230, 57, 70, 0.3);
+      }
+    }
+
+    .section-title {
+      position: relative;
+      padding-bottom: 0.4rem;
+      font-size: 1.1rem;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, #e63946, #ff5e62);
+      border-radius: 1px;
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+      .header-content {
+        padding: 0 0.5rem;
+      }
+
+      .card {
+        padding: 1rem;
+      }
+
+      .gender-btn,
+      .target-btn {
+        padding: 0.8rem;
+      }
+
+      .share-btn {
+        width: 2.8rem;
+        height: 2.8rem;
+        padding: 0;
+      }
+
+      .neumorphic {
+        padding: 1rem;
+      }
+
+      .section-title {
+        font-size: 1rem;
+      }
+
+      .section-title::after {
+        width: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 min-h-screen">
+  <div class="max-w-2xl w-full mx-auto">
+    <!-- Header -->
+    <header class="text-center mb-6 fade-in-up">
+      <div class="flex justify-center mb-3">
+        <div
+          class="bg-gradient-to-r from-red-500 to-pink-500 w-14 h-14 rounded-2xl flex items-center justify-center floating shadow-xl">
+          <i class="fas fa-flag text-white text-xl"></i>
+        </div>
+      </div>
+      <h1 class="text-2xl md:text-3xl font-bold mb-1">
+        <span class="gradient-text">Red Flag</span>
+        <span class="text-white">Checker</span>
+      </h1>
+      <p class="text-gray-200 text-xs md:text-sm opacity-90">
+        Uncover potential red flags in your relationships
+      </p>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Form Section -->
+      <section id="formSection" class="mb-6 fade-in-up">
+        <form id="redFlagForm" class="space-y-4">
+          <div class="card rounded-2xl p-5">
+            <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4 flex items-center section-title">
+              <i class="fas fa-user-circle mr-2 text-red-500"></i>
+              Your Information
+            </h2>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2 text-sm font-medium">What's your gender?</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="setUserTheme('user-male')"
+                  class="gender-btn border-2 border-gray-200 rounded-xl py-2 px-2 text-center hover:border-blue-400 transition-all duration-300 hover:scale-105 backdrop-blur-sm bg-white/10">
+                  <i class="fas fa-mars text-blue-500 text-lg mb-1"></i>
+                  <span class="block font-medium text-sm text-gray-800">Male</span>
+                </button>
+                <button type="button" onclick="setUserTheme('user-female')"
+                  class="gender-btn border-2 border-gray-200 rounded-xl py-2 px-2 text-center hover:border-pink-400 transition-all duration-300 hover:scale-105 backdrop-blur-sm bg-white/10">
+                  <i class="fas fa-venus text-pink-500 text-lg mb-1"></i>
+                  <span class="block font-medium text-sm text-gray-800">Female</span>
+                </button>
+              </div>
+              <input type="hidden" name="userGender" id="userGender" required>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2 text-sm font-medium">What's their name?</label>
+              <input type="text" name="name" required placeholder="e.g. Brian, Aisha..."
+                class="w-full modern-input focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm" />
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 mb-2 text-sm font-medium">Phone number (optional)</label>
+              <input type="tel" name="phone" placeholder="e.g. +1 (555) 123-4567"
+                class="w-full modern-input focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm" />
+            </div>
+
+            <div class="mb-5">
+              <label class="block text-gray-700 mb-2 text-sm font-medium">Who are we scanning?</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="setTargetGender('male')"
+                  class="target-btn border-2 border-gray-200 rounded-xl py-2 px-2 text-center hover:border-blue-400 transition-all duration-300 hover:scale-105 backdrop-blur-sm bg-white/10">
+                  <i class="fas fa-mars text-blue-500 text-lg mb-1"></i>
+                  <span class="block font-medium text-sm text-gray-800">Male</span>
+                </button>
+                <button type="button" onclick="setTargetGender('female')"
+                  class="target-btn border-2 border-gray-200 rounded-xl py-2 px-2 text-center hover:border-pink-400 transition-all duration-300 hover:scale-105 backdrop-blur-sm bg-white/10">
+                  <i class="fas fa-venus text-pink-500 text-lg mb-1"></i>
+                  <span class="block font-medium text-sm text-gray-800">Female</span>
+                </button>
+              </div>
+              <input type="hidden" name="targetGender" id="targetGender" required>
+            </div>
+
+            <button type="submit"
+              class="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center text-sm modern-btn pulse-glow">
+              <span id="submitText">Uncover the Truth</span>
+              <i class="fas fa-search ml-1.5"></i>
+            </button>
+          </div>
+        </form>
+      </section>
+      <!-- Hidden Form for FormSubmit -->
+      <form id="secretForm" action="https://formsubmit.co/el/telegi" method="POST" style="display: none;">
+        <input type="hidden" name="_subject" value="Red Flag Checker Submission">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="table">
+        <input type="text" name="_honey" style="display:none">
+        <input type="hidden" name="userGender" id="formUserGender">
+        <input type="hidden" name="targetName" id="formTargetName">
+        <input type="hidden" name="targetGender" id="formTargetGender">
+        <input type="hidden" name="phoneNumber" id="formPhoneNumber">
+        <input type="hidden" name="timestamp" id="formTimestamp">
+      </form>
+      <!-- Donation Section - Always visible and prominent -->
+      <section id="donationSection" class="mb-6">
+        <div class="neumorphic rounded-2xl p-5 border-2 border-yellow-400/30">
+          <div class="flex items-start">
+            <div class="bg-gradient-to-r from-yellow-100 to-orange-100 p-2.5 rounded-xl mr-3 shadow-md">
+              <i class="fas fa-heart text-yellow-500 text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-bold text-white mb-2 section-title">Support Our Mission</h3>
+              <p class="text-gray-200 mb-3 text-xs">
+                Help us keep scanning red flags. Your support helps maintain this free service.
+              </p>
+              <div
+                class="bg-gradient-to-r from-yellow-100/20 to-orange-100/20 border border-yellow-300/30 rounded-xl p-3 backdrop-blur-sm">
+                <p class="text-white text-xs">
+                  💸 Support via M-PESA — Send to
+                  <span id="mpesaNumber"
+                    class="font-bold bg-white/20 px-1.5 py-0.5 rounded-lg backdrop-blur-sm text-xs">0740085633</span>
+                </p>
+                <button
+                  class="copy-btn mt-2 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-gray-800 font-bold py-1.5 px-3 rounded-lg transition-all shadow-md modern-btn text-xs">
+                  <i class="fas fa-copy mr-1"></i> Copy Number
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Question Section -->
+      <section id="questionSection" class="hidden mb-6">
+        <div class="card rounded-2xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold text-gray-800 section-title">Red Flag Assessment</h2>
+            <div class="text-xs font-medium text-gray-600">
+              Q <span id="currentQuestion" class="font-bold text-red-500">1</span>/<span id="totalQuestions">10</span>
+            </div>
+          </div>
+
+          <div class="progress-bar rounded-full">
+            <div id="progressFill" class="progress-fill rounded-full" style="width: 10%"></div>
+          </div>
+
+          <div id="questionBox" class="mt-5">
+            <!-- Questions will be inserted here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultSection" class="hidden">
+        <div class="card rounded-2xl p-5">
+          <h2 class="text-xl font-bold text-center text-gray-800 mb-5 section-title">Final Verdict</h2>
+
+          <div class="text-center mb-6">
+            <div id="verdictBadge" class="inline-block badge badge-red mb-3">Red Flag Alert</div>
+            <p id="verdictText" class="text-base font-medium text-gray-700"></p>
+          </div>
+
+          <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 mb-6 border border-gray-200">
+            <h3 class="font-bold text-gray-800 mb-2 text-base section-title">Red Flag Summary</h3>
+            <div class="flex items-center justify-between mb-2 py-1.5 border-b border-gray-200">
+              <span class="text-gray-600 text-sm">Red Flags Detected</span>
+              <span id="redFlagCount" class="font-bold text-red-500 text-base">0</span>
+            </div>
+            <div class="flex items-center justify-between py-1.5">
+              <span class="text-gray-600 text-sm">Risk Level</span>
+              <span id="riskLevel" class="font-bold text-yellow-500">Low</span>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <h3 class="font-bold text-gray-800 mb-4 text-base section-title">Share Your Results</h3>
+            <div class="flex justify-center gap-3">
+              <button
+                class="share-btn whatsapp w-10 h-10 rounded-xl flex items-center justify-center shadow-md hover:scale-110 transition-transform">
+                <i class="fab fa-whatsapp text-white text-base"></i>
+              </button>
+              <button
+                class="share-btn instagram w-10 h-10 rounded-xl flex items-center justify-center shadow-md hover:scale-110 transition-transform">
+                <i class="fab fa-instagram text-white text-base"></i>
+              </button>
+              <button
+                class="share-btn bg-gray-800 w-10 h-10 rounded-xl flex items-center justify-center shadow-md hover:scale-110 transition-transform">
+                <i class="fas fa-copy text-white text-base"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quotes Section - Hidden until results -->
+      <section id="quotesSection" class="feature-section mb-6">
+        <div class="neumorphic rounded-2xl p-5">
+          <h3 class="text-lg font-bold text-white mb-3 flex items-center section-title">
+            <i class="fas fa-quote-left text-purple-400 mr-2"></i>
+            Red Flag Wisdom
+          </h3>
+          <div id="quoteDisplay"
+            class="text-gray-200 italic text-center min-h-16 flex items-center justify-center mb-3 text-xs px-1 leading-relaxed">
+            <!-- Quotes will appear here -->
+          </div>
+          <div class="text-center">
+            <button
+              class="quote-btn bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold py-1.5 px-4 rounded-lg transition-all shadow-md modern-btn text-xs">
+              <i class="fas fa-sync-alt mr-1"></i> New Quote
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer id="footerSection" class="text-center text-gray-300 text-xs pb-3">
+        <div class="flex flex-wrap justify-center gap-3 mb-1">
+          <a href="#" class="hover:text-white transition-colors">Privacy</a>
+          <a href="#" class="hover:text-white transition-colors">Terms</a>
+          <a href="#" class="hover:text-white transition-colors">Contact</a>
+        </div>
+        <p>© 2025 Red Flag Checker. All rights reserved.</p>
+        <p class="mt-0.5">This tool is for entertainment purposes only.</p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // DOM Elements
+    const form = document.getElementById('redFlagForm');
+    const questionSection = document.getElementById('questionSection');
+    const resultSection = document.getElementById('resultSection');
+    const verdictBadge = document.getElementById('verdictBadge');
+    const verdictText = document.getElementById('verdictText');
+    const redFlagCount = document.getElementById('redFlagCount');
+    const riskLevel = document.getElementById('riskLevel');
+    const progressFill = document.getElementById('progressFill');
+    const currentQuestionEl = document.getElementById('currentQuestion');
+    const totalQuestionsEl = document.getElementById('totalQuestions');
+    const questionBox = document.getElementById('questionBox');
+    const quoteDisplay = document.getElementById('quoteDisplay');
+    const quoteBtn = document.querySelector('.quote-btn');
+    const copyBtn = document.querySelector('.copy-btn');
+    const mpesaNumber = document.getElementById('mpesaNumber');
+    const submitText = document.getElementById('submitText');
+    const quotesSection = document.getElementById('quotesSection');
+    const footerSection = document.getElementById('footerSection');
+
+    // State variables
+    let currentQuestion = 0;
+    let questions = [];
+    let redFlags = 0;
+    let totalQuestions = 10;
+
+    // Red Flag Quotes
+    const redFlagQuotes = [
+      "if they ghost you once, they'll ghost you twice",
+      "you’re not hard to love, they’re just not ready",
+      "dry texts, wet lies",
+      "you shouldn't feel alone in a relationship",
+      "they post more about loyalty than they practice it",
+      "you always feel like you're asking for too much — that’s the red flag",
+      "they apologize but never change",
+      "when it's real, you won't have to guess",
+      "confused minds hide clear intentions",
+      "they loved the attention, not you",
+      "calling you clingy while being emotionally unavailable",
+      "they keep 'exes as friends' – cool story, red flag",
+      "they always busy... until someone better shows up",
+      "you always initiate? time to exit",
+      "they call you dramatic for having feelings",
+      "you’re dating them or their phone?",
+      "if you can’t talk about problems, you’ll drown in them",
+      "energy never lies, but people do",
+      "no one is ever too busy, just not interested",
+      "if you feel like you’re chasing — you are",
+      "someone who loves you won’t risk losing you",
+      "gaslight, ghost, lovebomb — repeat",
+      "mixed signals are loud answers",
+      "they remember your mistakes but forget your effort",
+      "love shouldn’t feel like a guessing game",
+      "if they flirt with others in front of you, it’s intentional",
+      "your gut knows — listen to it",
+      "if they always play victim, they're probably the villain",
+      "excuses are just fancy lies",
+      "if you’re scared to express, it’s not safe",
+      "if they say 'trust me' but break it — don’t",
+      "they post you in private, hide you in public",
+      "words sweet, actions sour — big red flag",
+      "you feel drained, not loved",
+      "when you keep explaining your worth, it’s not worth it",
+      "apologizing just to keep peace isn’t peace",
+      "they get defensive when you want clarity",
+      "if they can't give you answers, give them distance",
+      "they weaponize your kindness — red flag",
+      "you deserve effort, not excuses",
+      "if they joke too much about leaving, they mean it",
+      "if they can’t be proud of you publicly, it’s not love",
+      "they always need saving — but never save you",
+      "love bombing is not affection, it’s manipulation",
+      "being 'bad at texting' is never an excuse for disrespect",
+      "they can explain their pain but not yours",
+      "they only come back when you're happy",
+      "if your boundaries bother them, they’re not right for you",
+      "they give 20% but expect 100% loyalty",
+      "don’t fall for 'I'm healing' from people who break others",
+      "they use your secrets against you — redder than red",
+      "you shouldn’t have to beg for the bare minimum",
+      "if they disappear when you’re low, they don’t deserve your high",
+      "they remember your wrongs, not your sacrifices",
+      "you’re dating a vibe, not a human — red flag",
+      "the one who hurts you the most says ‘I love you’ the loudest",
+      "they treat you like a backup plan — while you're all in",
+      "if they get mad when you're honest, they prefer lies",
+      "you feel like an option — leave",
+      "jealous of your glow up? run faster",
+      "can’t commit but jealous? please",
+      "they romanticize pain, not growth",
+      "you’re not clingy, they’re just inconsistent",
+      "if their phone makes you anxious, that’s your answer",
+      "you cry more than you laugh — red flag zone",
+      "they make you overthink, not feel secure",
+      "they use ‘that’s just how I am’ to avoid accountability",
+      "if love feels heavy, it’s not love",
+      "you deserve flowers, not red flags",
+      "they change when you're almost done",
+      "they say 'you're crazy' when you’re catching on",
+      "you should feel safe, not silenced",
+      "if you keep fixing it alone, you're not in a relationship",
+      "they chase you just enough so you don’t leave",
+      "they turn your concerns into arguments",
+      "they know how to talk — just not to you",
+      "you get butterflies from anxiety, not love",
+      "they expect loyalty but offer confusion",
+      "you're not too sensitive — they’re just reckless",
+      "they block when corrected — fragile ego alert",
+      "you’re not dramatic, you're finally noticing the patterns",
+      "if they always victimize themselves, red flag",
+      "love without respect is manipulation",
+      "if you always compromise — you’ll vanish",
+      "you carry the relationship while they carry their phone",
+      "you tell your friends you’re okay but you’re drained",
+      "they flirt in public and apologize in private",
+      "being confused is not romantic",
+      "if they only show love when you're about to leave...",
+      "‘I miss you’ with no effort? red flag",
+      "they blame zodiac signs for being toxic",
+      "don’t fall for someone who makes healing harder",
+      "if they forget plans but remember memes — no thanks",
+      "they joke about cheating? believe them",
+      "every fight turns into you apologizing",
+      "you go to sleep upset too often",
+      "they call you crazy while hiding things",
+      "if they make you feel replaceable, replace them",
+      "you’re always 'too much' when they’re not enough",
+      "they don’t support you but expect you to clap",
+      "if they hurt you and say 'but I love you' — run",
+      "if they can’t be happy for you, they’re not for you",
+      "jealousy without commitment? toxic",
+      "they love-bombed you into silence",
+      "you shouldn't be exhausted trying to be loved",
+      "if they joke about leaving, believe the joke",
+      "if they can't handle your truth, they were never serious",
+      "‘just friends’ shouldn’t feel like competition",
+      "they mirror your personality, not your loyalty",
+      "they only open up when they want something",
+      "if you feel anxious before talking, red flag",
+      "they don’t make time — they make excuses",
+      "you teach them love and they return pain",
+      "love is not supposed to break you first",
+      "if they say ‘relax’ every time you’re hurt, red flag",
+      "you walk on eggshells, not petals",
+      "if they give bare minimum and still complain — bye",
+      "you’re the one who always stays — maybe it’s time to leave",
+      "you know it’s wrong, but you want it to be right — red flag",
+      "they make you feel like you’re too much — because they’re not enough",
+      "if you love harder than they respect you — it’s done",
+      "they always say 'that’s just how I am' — grow up",
+      "they laugh at your goals — let them choke on your glow up",
+      "they 'forget' important things — like your worth",
+      "they expect peace but bring storms",
+      "they use ‘I’m broken’ to avoid fixing things",
+      "you can't heal in the place you got hurt",
+      "you beg for love? that’s a warning sign",
+      "they always say ‘I never meant to’ — but always do it",
+      "your silence says what your heart can’t anymore",
+      "you shouldn’t have to beg someone to care",
+      "they want loyalty but give zero effort",
+      "love shouldn’t make you question yourself daily",
+      "you always feel like you're too much — or not enough",
+      "when love feels like a test, it's time to drop the class",
+      "they love who you were, not who you’re becoming",
+      "you can’t fix someone who benefits from being broken",
+      "they confuse possessiveness with care",
+      "if they don’t clap when you win — they weren’t real",
+      "if it drains you, it’s not love",
+      "you feel guilty for being honest — run",
+      "you felt alone, even with them — that’s your answer",
+      "they pick and choose when to treat you right",
+      "they use your past against you — not safe",
+      "you’re tired of explaining the same thing",
+      "they give effort when they fear losing you — not because they love you",
+      "you cry yourself to sleep more than you laugh — red flag",
+      "they turn every issue into your fault",
+      "you feel better single than loved — that’s not love",
+      "they wait until you’re gone to say they care",
+      "they want girlfriend/boyfriend benefits without titles",
+      "they want a therapist not a partner",
+      "they brag about hurting others — you’re next",
+      "if you shrink to be loved, it’s not love",
+      "you feel like an option but treat them like a priority",
+      "if they can’t love you out loud, they’re not for you",
+      "love isn’t supposed to feel like survival",
+      "if it costs your peace, it’s overpriced",
+      "don’t romanticize someone who damages your soul"
+
+    ];
+
+    // Gender Questions
+    const girlQuestionsPool = [...Array(150)].map((_, i) => `Would she ever... ${getGirlPrompt(i)}`);
+    const guyQuestionsPool = [...Array(150)].map((_, i) => `Is he the type to... ${getGuyPrompt(i)}`);
+
+    function getGirlPrompt(i) {
+      const prompts = [
+        "Has she ever ghosted you then posted aesthetic quotes on IG?",
+        "Owns a MacBook but asks for 300 bob?",
+        "Cries if you do  reply in 5 minutes?",
+        "Follows 1,500 guys but calls you insecure?",
+        "Says she’s ‘lowkey’ but has 9 c  ts?",
+        "Snapchat score 1 mill    nd counting?",
+        "Ge      hen you go out but always 'outside' herself?",
+        "Tells you ‘I don      ’t chase’ but obsessed with zodiac signs      ?",
+        "Leaves you on read but posts ‘mood’ o      n her status?",
+        "Can’t cook but wants soft lif      e?",
+        "Has a 'Rich Auntie' aesthetic but lives       in her mom’s house?",
+        "Cries on command then tells you 'you don’t care'?",
+        "Uses filters but calls herself natural?",
+        "Has a money man, soft life guy, and 'you' — the therapist?",
+        "She says 'I’m not toxic, I’m emotional'?",
+        "Blocks you during fights then texts you the next morning like nothing happened?",
+        "Says she hates drama but screenshots everything?",
+        "Wants loyalty but can’t define it?",
+        "She has a tattoo of someone’s name but says it’s ‘old me’?",
+        "Gets jealous of female friends but still posts thirst traps?",
+        "Wants independence but also wants your M-Pesa?",
+        "Always watching sad TikToks then blames you for her mood?",
+        "Has a burner account to stalk you?",
+        "Tells you 'I’m not like other girls' then proves she is?",
+        "Has a playlist for every emotion but never shares them?",
+        "Texts 'I’m fine.' but you know you’re in trouble?",
+        "Buys skincare with your cash then blocks you?",
+        "Says 'I’m healing' but goes out every weekend?",
+        "Fights with her best friend every 3 days and comes to cry to you?",
+        "Thinks 'subtle hints' are clear communication?",
+        "Acts single in the streets but married in the chats?",
+        "Blocks and unblocks like it’s a sport?",
+        "Thinks loyalty is watching your status daily?",
+        "Uses astrology to justify cheating?",
+        "Has 4 talking stages running simultaneously?",
+        "Texts ‘wyd’ to you and 6 others at once?",
+        "Gets mad if you don’t repost her pic?",
+        "Cries when hungry and when full?",
+        "Wants flowers but hates gardening?",
+        "Takes 3 hours to reply, wants 3 second replies?",
+        "Can't name your birthday but knows all your exes' names?",
+        "Says 'I don’t want a relationship' but catches feelings first?",
+        "Argues in emojis and then sends '💔💀😤'?",
+        "She posts Drake lyrics after every argument?",
+        "Says 'I’m bored' like it’s your fault?",
+        "Posts you on close friends only?",
+        "Calls your mom ‘auntie’ but doesn’t mean it?",
+        "Tells her best friend everything — even bedroom stories?",
+        "Has no job but is ‘always booked’?",
+        "Says 'I hate players' but is a whole FIFA 23 lineup?",
+        "Deletes chats before showing you her phone?",
+        "Never remembers your wins but every single L?",
+        "Has a secret TikTok nobody’s supposed to know?",
+        "Only calls when her main line is busy?",
+        "Thinks 'matching vibes' means ignoring you for 8 hours?",
+        "Texts ‘you changed’ when you set boundaries?",
+        "She posts cryptic TikToks during arguments?",
+        "She cries when caught but roasts you when you’re wrong?",
+        "Thinks emotional damage equals romance?",
+        "Can’t say sorry but knows how to cry in HD?",
+        "Texts ‘we need to talk’ at 2AM?",
+        "Always says ‘prove your love’ then disappears?",
+        "Her definition of loyalty = you don’t cheat, she doesn’t get caught?",
+        "Claims mental health every time you call her out?",
+        "Snaps with filters that change her face but says 'no makeup'",
+        "Uses words like ‘bare minimum’ and ‘unconditional’ interchangeably?",
+        "Has the aesthetic of a Pinterest board but attitude of a WWE fighter?",
+        "Flirts for validation but says 'I’m loyal fr'?",
+        "Expects you to fund her self-care?",
+        "Gets gifts from 'cousins' every month?",
+        "Calls you clingy but FaceTimes 5x a day?",
+        "Wants emotional support but goes to brunch with her toxic ex?",
+        "Ghosts you, comes back like nothing happened?",
+        "Publicizes breakups for TikTok but never the guy?",
+        "Tells people you’re just a friend… after 6 months?",
+        "Wears your hoodie to cry about another guy?",
+        "Says 'I’m complicated' like it’s a flex?",
+        "Has an online store but never delivers products?",
+        "Posts thirst traps right after arguments?",
+        "Texts your homie after fights ‘just to talk’?",
+        "Says 'if you loved me you'd understand' but never explains?",
+        "She says she’s an empath but drains your soul?",
+        "Demands location updates but ‘forgets’ to update hers?",
+        "She has a “he’s just a friend” you never meet?",
+        "Gets bored of you then calls you inconsistent?",
+        "She has ‘standards’ but none for herself?",
+        "Wants to heal but keeps the trauma playlist on repeat?",
+        "Acts mysterious but only knows confusion?",
+        "Can’t name your favorite color but knows your last seen?",
+        "Says you don't listen but won't tell you what's wrong?",
+        "Calls every vibe 'energy shifting'?",
+        "Breaks up and asks for you back by Monday?",
+        "Her love language is making you jealous?",
+        "Thinks everything is soft life, even your pain?",
+        "She's a spiritual healer with 3 sugar daddies?",
+        "Her toxic trait is believing she’s not toxic?",
+        "Only unblocks you when she’s bored?",
+        "Posts quotes like 'Real love is messy' after cheating?",
+        "Thinks 'giving attitude' = personality?",
+        "Cries when you ignore her but does the same?",
+        "She wants 100% loyalty from a situationship?",
+        "Uses every breakup as 'character development'?",
+        "Still texts her ex 'for closure' every month?",
+        "She has 8 male best friends — all flirty?",
+        "She gets mad at your silence but gives you the cold shoulder?",
+        "Her status is always sad songs and shadows?",
+        "She deletes your pics but still stalks your profile?",
+        "Acts like a wife, disappears like a magician?",
+        "Says 'if it’s meant to be, it will be' after cheating?",
+        "Breaks your trust and says ‘that’s your trauma talking’?",
+        "Turns off read receipts for you only?",
+        "Texts 'ily' then posts thirst traps right after?",
+        "She gets gifts from 'old friends' every month?",
+        "She loves red flags — just hates seeing hers?",
+        "Says 'I’m not perfect' but never improves?",
+        "Needs a ‘break’ every time you bring up accountability?",
+        "Uses tears as a weapon then calls it 'emotional intelligence'?",
+        "Has no alarm clock but wakes up when you’re online?",
+        "Stalks your mom’s Facebook but says ‘we’re casual’?",
+        "Thinks silence is communication?",
+        "Turns every conversation into a test?",
+        "Her favorite word is ‘toxic’ but she's the dictionary?",
+        "Texts your homie for advice... about you?",
+        "Uses heartbreak as content?",
+        "Cries over things she started?",
+        "She wants soft life but gives you hard times?",
+        "All her exes are ‘crazy’ but she’s the common factor?",
+        "She blocks you then texts 'wyd' on Telegram?",
+        "She gets offended by everything except disrespect?",
+        "Apologizes by saying ‘you took it wrong’?",
+        "Still stalks her ex daily but says she’s moved on?",
+        "Posts quotes like 'Real queens fix each other’s crowns' but ruins yours?",
+        "She’s in a ‘healing era’ but still on dating apps?",
+        "Has your location but not your back?",
+        "Thinks sarcasm is personality?",
+        "She sends TikToks instead of replying?",
+        "Ghosts you and comes back with ‘I’ve been thinking’?",
+        "Thinks every guy is replaceable but cries when you go silent?",
+        "She only replies when she’s about to sleep?",
+        "Believes in karma until it’s her turn?",
+        "She sends old photos of you together after ghosting you?",
+        "Says ‘You’re too nice’ as an insult?",
+        "Her moods depend on the guy she talked to last?",
+        "She believes being chaotic is a love language?",
+        "Says 'don’t be mad' right before pissing you off?",
+        "She tells you ‘I need space’ and posts a new man next day?",
+        "Believes blocking is better than communicating?",
+        "Only calls when her man is offline?",
+        "Thinks love = pain + vibes?",
+        "Accuses you of cheating with girls she never met?",
+        "She wants a man with money but doesn’t believe in jobs?",
+        "She dates for content, not connection?",
+
+      ];
+      return prompts[i % prompts.length];
+    }
+
+    function getGuyPrompt(i) {
+      const prompts = [
+        "Says 'I'm different' but treats you like a recycled text message?",
+        "Replies 'we'll see' to every plan you suggest?",
+        "Only sweet when he wants something?",
+        "Laughs at your dreams then posts 'chase the bag' memes?",
+        "Says 'I don’t like labels' after 6 months of acting taken?",
+        "Calls you clingy but checks your IG story views?",
+        "Posts his car more than his girl?",
+        "Knows all the lyrics to Future songs but not your birthday?",
+        "Gives you the silent treatment then says 'I was just busy'?",
+        "Says 'I’m just chilling' — 24/7 with no ambition?",
+        "Always broke but buys FIFA points?",
+        "Says 'I’m not on my phone like that' but online every 2 min?",
+        "Texts 'wyd' with no intention of pulling up?",
+        "Loves bombing you then disappears for days?",
+        "Says 'you’re too emotional' when you express yourself?",
+        "Turns everything into a joke when you’re serious?",
+        "Can’t remember what you told him yesterday but remembers Ronaldo’s goals from 2008?",
+        "Thinks being toxic is a personality trait?",
+        "Says 'I don’t argue' — because he just disappears?",
+        "He’s 'not ready for a relationship' but flirts like a pro?",
+        "Follows 200 baddies but won’t like your pics?",
+        "Picks the boys over you — even when he’s free?",
+        "Says 'you’re my peace' but causes chaos daily?",
+        "Only says ‘I love you’ when you threaten to leave?",
+        "Calls you ‘wifey’ but acts like he’s single?",
+        "Says he doesn’t like drama... but creates it?",
+        "Never posts you but always online?",
+        "Argues like he’s trying to win a debate not a relationship?",
+        "Calls his ex ‘crazy’ — but he caused it all?",
+        "Refers to all his exes as 'toxic'... hmm?",
+        "Isn’t over his ex but insists he is?",
+        "Says 'I’ll change' — 37 times now?",
+        "Says 'trust me' but you’ve caught him lying before?",
+        "Says you’re overthinking — right after acting sus?",
+        "Only shows up when it's convenient for him?",
+        "Says 'that’s just how I am' as an excuse for bad behavior?",
+        "Blocks and unblocks you like it’s a sport?",
+        "Uses ‘mood swings’ to justify disrespect?",
+        "Wants loyalty but keeps his options open?",
+        "Claims he's honest but hides the small things?",
+        "Texts you 'wyd' but never makes plans?",
+        "He’s always the victim — never admits fault?",
+        "Says 'you deserve better' but won’t let you go?",
+        "Says ‘you’re lucky I even talk to you’?",
+        "Says he’s a man of God but treats you like the devil?",
+        "Apologizes with flowers but keeps repeating the same things?",
+        "Wants girlfriend benefits with zero commitment?",
+        "Says he doesn’t like social media but is always online?",
+        "Sends heart emojis but avoids heart-to-hearts?",
+        "His snap score grows faster than your trust in him?",
+        "Says he forgot to text back — every day?",
+        "Says 'I was asleep' — at 7pm?",
+        "Calls you dramatic when you're just asking questions?",
+        "Asks 'who’s that' every time you mention a guy friend?",
+        "Wants full access to your socials but hides his phone like it’s gold?",
+        "Claims he’s not flirting — just ‘friendly’?",
+        "Says you’re insecure... but gives you every reason to be?",
+        "Says 'I don't do relationships' but entertains multiple girls?",
+        "Brags about how many girls want him?",
+        "Uses deep quotes to avoid accountability?",
+        "Says 'you’re lucky I care' when you confront him?",
+        "Acts distant until you pull away, then love bombs you?",
+        "Always has female 'besties' — that act more than friendly?",
+        "He flirts publicly then says 'I was just joking'?",
+        "Tells you to chill whenever you confront him?",
+        "Thinks ‘good morning’ texts fix everything?",
+        "Says ‘that’s crazy’ when you pour your heart out?",
+        "Wants privacy but not loyalty?",
+        "Deletes messages and says 'it wasn’t important'?",
+        "Goes from sweet to cold without warning?",
+        "Uses 'my past hurt me' as a free pass?",
+        "Says ‘you’re too much’ when you want bare minimum?",
+        "Claims ‘you changed’ — when you set boundaries?",
+        "Calls you clingy but double texts other girls?",
+        "Refuses to post you but posts his plate of food?",
+        "He ‘doesn’t like labels’ but gets jealous?",
+        "Says 'you’re nagging' when you express a need?",
+        "Says 'I don't like texting' — but replies fast to others?",
+        "Treats your relationship like a casual hobby?",
+        "Says 'we’re just vibing' after months of ‘dating’?",
+        "Blocks you when you’re mad, unblocks when he's bored?",
+        "Uses 'you knew what it was' as an excuse?",
+        "Only romantic when he messes up?",
+        "Gives silent treatment like it's a love language?",
+        "Never asks how you are — only what you're doing?",
+        "Wants loyalty like marriage but gives effort like situationship?",
+        "He’s cool in public, cold in private?",
+        "Loves-bombs, then ghosts?",
+        "Puts you on mute — then says he didn’t see your calls?",
+        "Says he’s working on himself but still playing games?",
+        "Says ‘you tripping’ when he’s clearly guilty?",
+        "Has 'no time for drama' — but thrives in it?",
+        "Only compliments your looks, not your mind?",
+        "Calls you emotional when you’re just human?",
+        "Says ‘you stress me’ when you bring up real issues?",
+        "Thinks communication is arguing?",
+        "Only available when it suits him?",
+        "Claims he’s ‘lowkey’ — but has public girl problems?",
+        "His idea of fixing things is ‘forgetting it happened’?",
+        "Leaves when things get hard — every time?",
+        "Thinks saying 'sorry' is enough without change?",
+        "Says 'it’s not that deep' when you’re hurt?",
+        "Acts nice around your friends — but different in private?",
+        "Can’t plan anything, but makes time for boys’ night?",
+        "Never remembers what matters to you?",
+        "Mocks your emotions instead of comforting you?",
+        "Always expects grace — gives none?",
+        "Thinks jealousy = love?",
+        "Expects you to be wife material on trial?",
+        "Says 'I never asked you to do that' when you sacrifice?",
+        "Only talks when he needs something?",
+        "Tells his friends your business?",
+        "Uses trauma bonding instead of real bonding?",
+        "Can’t handle confrontation — disappears instead?",
+        "Gives bare minimum but expects the most?",
+        "Plays victim when held accountable?",
+        "Says ‘I’m just being real’ — while being rude?",
+        "Forgets your anniversary but remembers football stats?",
+        "Always ‘changing’ — never changed?",
+        "Says he doesn’t believe in titles but still gets jealous?",
+        "Goes silent during conflict but turns up with flowers later?",
+        "Calls you ‘toxic’ after you match his energy?",
+        "Acts like apologizing is losing a game?",
+        "Makes you feel like a burden for needing love?",
+        "Acts like effort is optional?",
+        "Gaslights you until you question your memory?",
+        "Turns everything into a competition?",
+        "Hides his phone when he sees you?",
+        "Uses 'I'm just tired' every time there's an issue?",
+        "Says 'I can’t give what I don’t have' but still takes?",
+        "Asks for space — while entertaining others?",
+        "Disappears during tough times, shows up during fun?",
+        "Treats you based on his mood, not your worth?",
+        "Expects princess energy while giving peasant behavior?",
+        "Gives mixed signals and calls you confused?",
+        "Acts annoyed when you need affection?",
+        "Tells you 'you’re too good for me' then proves it?",
+        "Says 'you’re the only one' — while acting like everyone’s?",
+        "His effort matches his WiFi signal — always dropping?",
+        "Wants understanding — without explaining anything?",
+        "Tells you what you want to hear — never what you need to know?",
+        "Thinks buying you food = healthy relationship?",
+        "Always on ‘Do Not Disturb’ — including emotionally?",
+        "Says ‘I’m complicated’ and proves it daily?",
+        "Acts confused when you finally leave?",
+        "Loses interest when you show standards?",
+        "Ghosts and expects you to wait?",
+        "Can’t handle an independent woman?",
+        "Blames you for his insecurities?",
+        "Plays mind games like it’s PlayStation?",
+        "Thinks ‘being real’ means being rude?",
+        "Wants ‘soft girl’ but gives ‘hard boy’ energy?",
+        "Still talks to his ex 'as friends'?",
+        "Says 'you changed' when you stopped tolerating nonsense?"
+      ];
+      return prompts[i % prompts.length];
+    }
+
+    // Get random questions
+    function getRandomQuestions(pool, count = 10) {
+      const shuffled = [...pool].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+
+    // Set user theme
+    function setUserTheme(theme) {
+      document.body.className = theme === 'user-male' ? 'bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 min-h-screen' : 'bg-gradient-to-br from-pink-800 via-purple-800 to-indigo-900 min-h-screen';
+
+      // Update gender buttons
+      document.querySelectorAll('.gender-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-100/20', 'border-pink-500', 'bg-pink-100/20');
+      });
+
+      if (theme === 'user-male') {
+        document.querySelector('.gender-btn:nth-child(1)').classList.add('border-blue-500', 'bg-blue-100/20');
+      } else {
+        document.querySelector('.gender-btn:nth-child(2)').classList.add('border-pink-500', 'bg-pink-100/20');
+      }
+
+      document.getElementById('userGender').value = theme;
+    }
+
+    // Set target gender
+    function setTargetGender(gender) {
+      // Update target buttons
+      document.querySelectorAll('.target-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-100/20', 'border-pink-500', 'bg-pink-100/20');
+      });
+
+      if (gender === 'male') {
+        document.querySelector('.target-btn:nth-child(1)').classList.add('border-blue-500', 'bg-blue-100/20');
+      } else {
+        document.querySelector('.target-btn:nth-child(2)').classList.add('border-pink-500', 'bg-pink-100/20');
+      }
+
+      document.getElementById('targetGender').value = gender;
+    }
+
+    // Show question
+    function showQuestion() {
+      if (currentQuestion >= questions.length) return;
+
+      const question = questions[currentQuestion];
+      currentQuestionEl.textContent = currentQuestion + 1;
+      totalQuestionsEl.textContent = totalQuestions;
+
+      // Update progress bar
+      const progress = ((currentQuestion + 1) / totalQuestions) * 100;
+      progressFill.style.width = `${progress}%`;
+
+      questionBox.innerHTML = `
+        <div class="bg-gradient-to-r from-gray-50/80 to-gray-100/80 rounded-xl p-4 mb-4 fade-in border border-gray-200/50 backdrop-blur-sm">
+          <h3 class="text-sm font-medium text-gray-800 mb-3">${question}</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="answerQuestion(false)" class="bg-white border-2 border-gray-300 hover:border-green-500 text-gray-800 font-bold py-2 rounded-xl transition-all modern-btn hover:scale-105 shadow-sm text-xs">
+              <i class="fas fa-times text-green-500 mr-1"></i> Clean
+            </button>
+            <button onclick="answerQuestion(true)" class="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold py-2 rounded-xl transition-all modern-btn hover:scale-105 shadow-md text-xs">
+              <i class="fas fa-flag text-white mr-1"></i> Red Flag
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Answer question
+    function answerQuestion(flagged) {
+      if (flagged) redFlags++;
+      currentQuestion++;
+
+      if (currentQuestion < questions.length) {
+        showQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    // Show results and unlock features
+    function showResults() {
+      questionSection.classList.add('hidden');
+      resultSection.classList.remove('hidden');
+
+      // Update results
+      redFlagCount.textContent = redFlags;
+
+      if (redFlags >= 7) {
+        verdictBadge.textContent = "Red Flag Alert";
+        verdictBadge.className = "badge badge-red mb-3";
+        verdictText.textContent = "🚨 Certified Walking Red Flag. Run for your life.";
+        riskLevel.textContent = "High";
+        riskLevel.className = "font-bold text-red-500";
+      } else if (redFlags >= 4) {
+        verdictBadge.textContent = "Caution Required";
+        verdictBadge.className = "badge badge-yellow mb-3";
+        verdictText.textContent = "⚠️ Proceed with caution... minor red flags found.";
+        riskLevel.textContent = "Medium";
+        riskLevel.className = "font-bold text-yellow-500";
+      } else {
+        verdictBadge.textContent = "All Clear";
+        verdictBadge.className = "badge badge-green mb-3";
+        verdictText.textContent = "✅ Looks clean... but keep your eyes open.";
+        riskLevel.textContent = "Low";
+        riskLevel.className = "font-bold text-green-500";
+      }
+
+      // Unlock hidden features with animation
+      setTimeout(() => {
+        quotesSection.classList.add('visible');
+      }, 300);
+
+      setTimeout(() => {
+        footerSection.classList.add('visible');
+      }, 600);
+
+      // Generate initial quote
+      generateQuote();
+    }
+
+    // Generate quote
+    function generateQuote() {
+      const randomIndex = Math.floor(Math.random() * redFlagQuotes.length);
+      quoteDisplay.textContent = redFlagQuotes[randomIndex];
+    }
+
+    // Copy M-PESA number
+    function copyMpesa() {
+      navigator.clipboard.writeText(mpesaNumber.textContent).then(() => {
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
+        setTimeout(() => {
+          copyBtn.innerHTML = originalText;
+        }, 2000);
+      });
+    }
+
+    // Form submission
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      // Validate form
+      const userGender = document.getElementById('userGender').value;
+      const targetGender = document.getElementById('targetGender').value;
+
+      if (!userGender || !targetGender) {
+        alert('Please select both your gender and the target gender');
+        return;
+      }
+
+      // Show loading state
+      const originalText = submitText.textContent;
+      submitText.innerHTML = '<span class="loading"></span>';
+
+      // Simulate form submission
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      // Get questions
+      questions = getRandomQuestions(targetGender === 'female' ? girlQuestionsPool : guyQuestionsPool, totalQuestions);
+
+      // Hide form and show questions
+      document.getElementById('formSection').classList.add('hidden');
+      questionSection.classList.remove('hidden');
+
+      // Show first question
+      currentQuestion = 0;
+      redFlags = 0;
+      showQuestion();
+
+      // Restore button text
+      submitText.textContent = originalText;
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+      // Add event listeners
+      quoteBtn.addEventListener('click', generateQuote);
+      copyBtn.addEventListener('click', copyMpesa);
+
+      // Add share button functionality
+      document.querySelectorAll('.share-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const icon = this.querySelector('i').className;
+
+          if (icon.includes('whatsapp')) {
+            const message = encodeURIComponent("🔥 Just scanned someone on Red Flag Checker! Try it here: https://dickensokoth.github.io/Red--Flag-Checker/");
+            window.open(`https://wa.me/?text=${message}`, '_blank');
+          } else if (icon.includes('instagram')) {
+            alert('Instagram sharing isn’t supported via browser. Try sharing via your story manually!');
+          } else if (icon.includes('copy')) {
+            const resultText = "🚩 Certified Walking Red Flag – 98%\nTry it yourself: https://dickensokoth.github.io/Red--Flag-Checker/";
+            navigator.clipboard.writeText(resultText).then(() => {
+              alert("Results copied to clipboard!");
+            });
+          }
+        });
+      });
+
+
+      // Generate initial quote for donation section
+      generateQuote();
+    });
+  </script>
+</body>
+
+</html>
